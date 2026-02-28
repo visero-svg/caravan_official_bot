@@ -19,18 +19,17 @@
     <h1>Добавить новый поход</h1>
 
     <div class="note">
-        <b>Фото:</b> После отправки формы прикрепите фото к следующему сообщению в чате (скрепка → НЕ БОЛЕЕ 1 фото !).<br>
-        Бот опубликует альбом с текстом.
+        <b>Фото:</b> После отправки формы прикрепите фото к следующему сообщению в чате (до 10 шт).
     </div>
 
-    <div class="success" id="successMessage">✅ Текст отправлен! Теперь прикрепите фото (если нужно) и отправьте любое сообщение.</div>
+    <div class="success" id="successMessage">✅ Текст отправлен! Теперь прикрепите фото (если нужно).</div>
 
     <form id="hikeForm">
         <label>Название похода *</label>
-        <input type="text" id="title">
+        <input type="text" id="title" required>
 
         <label>Дата начала *</label>
-        <input type="date" id="startDate">
+        <input type="date" id="startDate" required>
 
         <label>Число дней</label>
         <input type="number" id="nDays" value="1" min="1">
@@ -56,28 +55,31 @@
             <option value="9">Средний комфортный темп</option>
         </select>
 
-        <!-- Основной руководитель -->
+        <!-- Единая база руководителей -->
         <label>Руководитель (ФИО) *</label>
-        <input type="text" id="headName">
+        <select id="headName" required>
+            <option value="">— Выберите руководителя —</option>
+        </select>
 
         <label>Telegram руководителя</label>
-        <input type="text" id="headTelegram" placeholder="@username">
+        <input type="text" id="headTelegram" readonly>
 
         <label>Телефон руководителя</label>
-        <input type="tel" id="headPhone">
+        <input type="tel" id="headPhone" readonly>
 
-        <!-- Второй руководитель (необязательный) -->
         <label>Второй руководитель (ФИО)</label>
-        <input type="text" id="subHeadName" placeholder="Опционально">
+        <select id="subHeadName">
+            <option value="">— Не указан —</option>
+        </select>
 
         <label>Telegram второго руководителя</label>
-        <input type="text" id="subHeadTelegram" placeholder="@username">
+        <input type="text" id="subHeadTelegram" readonly>
 
         <label>Телефон второго руководителя</label>
-        <input type="tel" id="subHeadPhone">
+        <input type="tel" id="subHeadPhone" readonly>
 
         <label>Описание похода *</label>
-        <textarea id="description"></textarea>
+        <textarea id="description" required></textarea>
 
         <label>Место и время встречи</label>
         <textarea id="meetingPoint"></textarea>
@@ -97,11 +99,63 @@
         tg.ready();
         tg.expand();
 
+        // ==================== ЕДИНАЯ БАЗА РУКОВОДИТЕЛЕЙ ====================
+        const leaders = [
+            { name: "Архипов Михаил",     telegram: "",     phone: "+79151568086" },
+            { name: "Залёткин Игорь",     telegram: "",     phone: "+79175838612" },
+            { name: "Антонов Алексей",    telegram: "",      phone: "+79629422194" },
+            { name: "Решетов Дмитрий",    telegram: "@xde45",     phone: "+79163069218" },
+            { name: "Ливеровский Леонид", telegram: ""  phone: "+79036851478" },
+            { name: "Пересыпкин Виталий", telegram: "@V_Vit",   phone: "+79265762462" },
+            { name: "Макарова Светлана",  telegram: "",     phone: "+79055604474" },
+            { name: "Гаврин Илья",        telegram: "",       phone: "+79162174319" },
+            { name: "Огнев Андрей",       telegram: "",        phone: "+79153771101" },
+            { name: "Мошков Александр",   telegram: "",      phone: "+79032047886" },
+            { name: "Иванов Фёдор",       telegram: "",       phone: "+79104436106" },
+            { name: "Прищепа Евгений",    telegram: "",   phone: "+79104167156" },
+            { name: "Бородин Владимир",   telegram: "@v4v12v13",       phone: "" },
+            { name: "Лукин Константин",   telegram: "@KonstantYn_Y",        phone: "+79166775515" },
+            { name: "САМОСТОЯТЕЛЬНО",     telegram: "",                phone: "" }
+            // Добавляйте новых руководителей сюда ↑
+        ];
+
+        // Заполнение списков
+        function populateLeaders() {
+            const headSelect = document.getElementById('headName');
+            const subHeadSelect = document.getElementById('subHeadName');
+
+            leaders.forEach(leader => {
+                const opt1 = new Option(leader.name, leader.name);
+                const opt2 = new Option(leader.name, leader.name);
+                headSelect.add(opt1);
+                subHeadSelect.add(opt2);
+            });
+        }
+
+        // Автозаполнение полей
+        function setupAutoFill(selectId, telegramId, phoneId) {
+            document.getElementById(selectId).addEventListener('change', function() {
+                const selected = this.value;
+                const leader = leaders.find(l => l.name === selected);
+                
+                document.getElementById(telegramId).value = leader ? leader.telegram : "";
+                document.getElementById(phoneId).value = leader ? leader.phone : "";
+            });
+        }
+
         tg.MainButton.text = "Отправить в канал";
         tg.MainButton.color = "#2481cc";
         tg.MainButton.show();
         tg.MainButton.enable();
 
+        // Инициализация
+        window.onload = function() {
+            populateLeaders();
+            setupAutoFill('headName', 'headTelegram', 'headPhone');
+            setupAutoFill('subHeadName', 'subHeadTelegram', 'subHeadPhone');
+        };
+
+        // Отправка формы
         tg.MainButton.onClick(() => {
             tg.MainButton.disable();
             tg.MainButton.text = "Отправка...";
@@ -134,32 +188,20 @@
                     return;
                 }
 
-                const kindTexts = {1: "КАРАВАН-ПВД", 4: "КАРАВАН-Марафон", 6: "Караван-Прогульщик", 3: "КАРАВАН-Экспедиция", 5: "Спорт-КАРАВАН", 9: "КАРАВАН-Винегрет"};
-                const tempTexts = {1: "Средний темп", 3: "Быстрый темп", 2: "Медленный темп", 9: "Средний комфортный темп"};
-
+                // Формирование текста поста
                 let text = `🚵‍♂️ <b>${data.title}</b>\n\n`;
                 text += `<b>Дата:</b> ${data.startDate}`;
                 if (data.nDays > 1) text += ` (${data.nDays} дня)\n`;
                 else text += `\n`;
                 if (data.distance) text += `<b>Дистанция:</b> ${data.distance} км\n`;
-                text += `<b>Вид:</b> ${kindTexts[data.kindId] || 'Другое'}\n`;
-                text += `<b>Темп:</b> ${tempTexts[data.tempId] || 'Средний'}\n`;
 
-                // Основной руководитель
                 text += `<b>Руководитель:</b> ${data.headName}`;
-                if (data.headTelegram) {
-                    const tgLink = data.headTelegram.replace(/^@/, '');
-                    text += ` (<a href="https://t.me/${tgLink}">${data.headTelegram}</a>)`;
-                }
+                if (data.headTelegram) text += ` (<a href="https://t.me/${data.headTelegram.replace(/^@/, '')}">${data.headTelegram}</a>)`;
                 if (data.headPhone) text += `\n<b>Телефон:</b> ${data.headPhone}`;
 
-                // Второй руководитель (если заполнено ФИО)
                 if (data.subHeadName) {
                     text += `\n<b>Второй руководитель:</b> ${data.subHeadName}`;
-                    if (data.subHeadTelegram) {
-                        const tgLink = data.subHeadTelegram.replace(/^@/, '');
-                        text += ` (<a href="https://t.me/${tgLink}">${data.subHeadTelegram}</a>)`;
-                    }
+                    if (data.subHeadTelegram) text += ` (<a href="https://t.me/${data.subHeadTelegram.replace(/^@/, '')}">${data.subHeadTelegram}</a>)`;
                     if (data.subHeadPhone) text += `\n<b>Телефон:</b> ${data.subHeadPhone}`;
                 }
 
@@ -167,21 +209,11 @@
                 if (data.meetingPoint) text += `\n\n<b>Встреча:</b>\n${data.meetingPoint}`;
                 if (data.transport) {
                     text += `\n\n<b>Транспорт:</b> ${data.transport}`;
-                    if (data.transportURL) {
-                        const transportLinkText = data.transport.trim() || "расписание";
-                        text += ` (<a href="${data.transportURL}">${transportLinkText}</a>)`;
-                    }
+                    if (data.transportURL) text += ` (<a href="${data.transportURL}">расписание</a>)`;
                 }
-                if (data.trackURL) {
-                    text += `\n\n<b>Трек:</b> <a href="${data.trackURL}">трек</a>`;
-                }
+                if (data.trackURL) text += `\n\n<b>Трек:</b> <a href="${data.trackURL}">трек</a>`;
 
-                const payload = {
-                    action: "publish_hike",
-                    text: text
-                };
-
-                tg.sendData(JSON.stringify(payload));
+                tg.sendData(JSON.stringify({ action: "publish_hike", text: text }));
 
                 document.getElementById('successMessage').style.display = 'block';
                 tg.MainButton.text = "Отправлено! Готово к новому";
@@ -196,4 +228,8 @@
         });
     </script>
 </body>
+</html>
+    </script>
+</body>
+
 </html>
